@@ -7,10 +7,11 @@ equation.
 
 The provided software implements the effects of linear dispersion, pulse
 self-steepening, and the Raman effect. Input pulse shot noise can be included
-using one-photon-per mode quantum noise models, and coherence properties of the
+using commonly adopted quantum noise models considering both, pure spectral
+phase noise as well as Gaussian noise, and coherence properties of the
 resulting spectra can be calculated.
 
-We include an example, demonstrating the functionality of the software by
+We include examples, demonstrating the functionality of the software by
 reproducing results for a supercontinuum generation process in a photonic
 crystal fiber, documented in the scientific literature.
 
