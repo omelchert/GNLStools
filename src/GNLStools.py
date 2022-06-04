@@ -1,5 +1,15 @@
 '''GNLStools.py
 
+Module implementing data structures and functions enabling numerical simulation
+and analysis of the propagation dynamics of ultrashort laser pulses in
+nonlinear waveguides.
+
+The modeling approach is based on the generalized nonlinear Schroedinger
+equation for the pulse envelope. The provided software implements the effects
+of linear dispersion, pulse self-steepening, and the Raman effect. Input pulse
+shot noise can be included using commonly adopted quantum noise models
+considering both, pure spectral phase noise as well as Gaussian noise, and
+coherence properties of the resulting spectra can be calculated.
 
 Author: O. Melchert
 Date: March 2022
@@ -10,64 +20,18 @@ from scipy.special import factorial
 from scipy.constants import Planck  as hPlanck
 
 # -- CONVENIENT ABBREVIATIONS
-hBar = hPlanck/2/np.pi # (J s)
-
-FT=nfft.ifft
-IFT=nfft.fft
-
-
-def qnoise_spectral_synthesis(ts,w0,s0):
-    """quantum noise through spectral synthesis
-
-    generates quantum noise by spectral synthesis. The algorithm
-    implements pure phase noise in the Fourier domain.
-
-    Args:
-        t (1D numpy-array, floats): time grid
-        w0 (float): pulse center frequency
-        s0 (int): seed for random number generator
-
-    Returns: (du)
-        du (1D numpy-array, cplx floats): time-domain representation
-            of quantum noise
-    """
-
-    # -- PROPERLY NORMALIZED FOURIER TRANSFORM PAIR
-    def _ifft(w, Xw):
-        return (w[1]-w[0])*nfft.fft(Xw)/np.sqrt(2.*np.pi)
-
-    def _fft(t, Xt):
-        return (t[1]-t[0])*nfft.ifft(Xt)/np.sqrt(2.*np.pi)*t.size
-
-    nn = 1 #16
-    tMax = -ts.min()
-    Nt = nn*ts.size
-    t = np.linspace(-nn*tMax, nn*tMax, Nt, endpoint=False)
-
-    w = nfft.fftfreq(t.size,d=t[1]-t[0])*2*np.pi
-    dw = w[1]-w[0]
-
-    np.random.seed(s0)
-
-    # -- REPRESENTATIVE ENERGY OF PHOTON IN BIN 
-    #e0 = hBar*w0/1e-15  # (Js*rad/s = J rad)
-    #e0 = hBar*(w+w0)/1e-15  # (Js*rad/s = J rad)
-    e0 = np.where(w+w0>0, hBar*(w+w0)/1e-15, 0) # (Js*rad/s = J rad)
-    # -- NOISE SCALING FACTOR
-    sFac = np.sqrt(e0/(dw/1e-15)) # (sqrt(J rad * s/rad) = sqrt(Js))
-    # -- RANDOM NOISE IN SPECTRAL PHASE
-    noise_w = sFac*np.exp(1j*2*np.pi*np.random.uniform(size=w.size))
-    # -- CONVERT BACK TO TIME DOMAIN
-    noise_t = _ifft(w,noise_w)/1e-15  # ( sqrt(Js)*rad/s = sqrt(J/s)*rad)
-
-    return noise_t[int((t.size-ts.size)/2): int((t.size+ts.size)/2)]
+hBar = 1e15*hPlanck/2/np.pi # (J fs) reduced Planck constant
+# ... FORWARD AND BACKWARD FOURIER TRANSFORMS
+FT = nfft.ifft
+IFT = nfft.fft
 
 
-def qnoise_direct_sampling(t,w0,s0):
-    """quantum noise through spectral synthesis
+def noise_model_01(t,w0,s0):
+    r"""noise model 01 - Direct sampling
 
-    generates quantum noise by spectral synthesis. The algorithm
-    implements pure phase noise in the Fourier domain.
+    generates an instance of noise by directly sampling in the time- domain.
+    The underlying noise model assumes complex-valued noise amplitudes with
+    normally distributed real and imaginary parts.
 
     Args:
         t (1D numpy-array, floats): time grid
@@ -75,48 +39,111 @@ def qnoise_direct_sampling(t,w0,s0):
         s0 (int): seed for random number generator
 
     Returns: (du)
-        du (1D numpy-array, cplx floats): time-domain representation
-            of quantum noise
+        du (1D numpy-array, cplx floats): instance of time-domain noise
     """
     np.random.seed(s0)
-    _N01 = np.random.normal
+    N01 = np.random.normal
     dt = t[1]-t[0]
 
     # -- REPRESENTATIVE ENERGY OF PHOTON IN BIN 
-    e0 = hBar*(w0*1e15) # (J)
-    # -- NOISE SCALING FACTOR
-    sFac = np.sqrt(e0/(dt*1e-15)/2) # (W = J/s)
+    e0 = hBar*w0                        # (J)
+    # -- NOISE SCALING FACTOR ACCOUNTING FOR POWER IN WATTES
+    sFac = np.sqrt(1e15*e0/dt/4)      # (sqrt(W) = sqrt(J/s))
     # -- GAUSSIAN NOISE MODEL IN TIME DOMAIN 
-    noise_t = sFac*(_N01(0,1,size=t.size) + 1j*_N01(0,1,size=t.size))
+    noise_t = sFac*(N01(0,1,size=t.size) + 1j*N01(0,1,size=t.size))
 
     return noise_t
 
 
-def noise_variance(x):
-    """quantum noise variance
+def noise_model_02(t,w0,s0):
+    r"""noise model 02 - Fourier method, pure phase noise
 
-    computes variance of complex amplitudes in time domain to
-    assess the correctness of the used quantum noise model.
-
-    Note:
-       - implements variance consistent with Eq. (27) in Ref. [1]
+    generates an instance of time-domain noise by sampling its Fourier
+    representation. The underlying noise model assumes complex valued spectral
+    amplitudes with pure phase noise.
 
     Args:
-        x (1D numpy array, complex): complex amplitudes specifying noise
+        t (1D numpy-array, floats): time grid
+        w0 (float): pulse center frequency
+        s0 (int): seed for random number generator
 
-    Returns: (var)
-        var (float): variance of complex noise increments
-
-    Reference:
-        [1] Noise of mode-locked lasers (Part I): numerical model
-            R. Paschotta
-            Appl. Phys. B 79, 153--162 (2004)
+    Returns: (du)
+        du (1D numpy-array, cplx floats): instance of time-domain noise
     """
-    return np.mean( np.abs(np.real(x))**2 + np.abs(np.imag(x))**2)
+    np.random.seed(s0)
+    U = np.random.uniform
+    w = nfft.fftfreq(t.size,d=t[1]-t[0])*2*np.pi
+    T = 2*np.pi/(w[1]-w[0])
+
+    # -- REPRESENTATIVE ENERGY OF PHOTON IN BIN 
+    e0 = hBar*np.abs(w+w0)          # (J)
+    # -- NOISE SCALING FACTOR
+    sFac = np.sqrt(1e15*e0/T)       # (sqrt(W) = sqrt(Js))
+    # -- OBTAIN SPECTRAL AMPLITUDES WITH PURE PHASE NOISE
+    phi = U(size=t.size)
+    noise_w = sFac*np.exp(1j*2*np.pi*phi)
+
+    return IFT(noise_w)             # ( sqrt(Js)*rad/s = sqrt(J/s)*rad)
 
 
-def number_of_photons(t,u0,w0):
-    """number of photons in pulse
+def noise_model_03(t,w0,s0):
+    r"""noise model 03 - Fourier method, Gaussian noise
+
+    generates an instance of time-domain noise by sampling its Fourier
+    representation. The underlying noise model assumes complex-valued spectral
+    amplitudes with normally distributed real and imaginary parts.
+
+    Args:
+        t (1D numpy-array, floats): time grid
+        w0 (float): pulse center frequency
+        s0 (int): seed for random number generator
+
+    Returns: (du)
+        du (1D numpy-array, cplx floats): time-domain representation
+    """
+    np.random.seed(s0)
+    U = np.random.uniform
+    w = nfft.fftfreq(t.size,d=t[1]-t[0])*2*np.pi
+    T = 2*np.pi/(w[1]-w[0])
+
+    # -- REPRESENTATIVE ENERGY PER BIN 
+    e0 = hBar*np.abs(w+w0)          # (J)
+    # -- NOISE SCALING FACTOR
+    sFac = np.sqrt(1e15*e0/T/4)     # (sqrt(W) = sqrt(Js))
+    # -- OBTAIN NOISIFIED SPECTRAL AMPLITUDES USING BOX-MUELLER METHOD 
+    phi1, phi2 = U(size=t.size), U(size=t.size)
+    noise_w = sFac*np.sqrt(-2*np.log(phi1))*np.exp(2j*np.pi*phi2)
+
+    return IFT(noise_w)             # ( sqrt(Js)*rad/s = sqrt(J/s)*rad)
+
+
+def number_of_photons(w,uw,w0):
+    r"""number of photons in pulse
+
+    computes the total number photons in the pulse according to Eq.~(9d).
+
+    Args:
+        w (numpy array, 1D): angular frequency grid
+        uw (numpy array, 1D): spectral envelope
+        w0 (float): pulse center frequency
+
+    Notes:
+        - Squared amplitude is measured in units of Watts (W=J/s), hBar is
+          given in units J fs, and w and w0  are given in rad/fs. So as to
+          account for the difference in units, an additional factor of 1e-15 is
+          needed to get a proper number of photons.
+
+    Returns: (N0)
+        N0 (float): total number of photons
+    """
+    # -- SCALING FACTOR WITH UNITS OF 1/J
+    sFac = 2*np.pi/hBar/(w[1]-w[0])
+    # --- DIMENSIONLES TOTAL NUMBER OF PHOTONS
+    return 1e-15*sFac*np.sum(np.abs(uw)**2/(w + w0))
+
+
+def number_of_photons_naive(t,u0,w0):
+    r"""number of photons in pulse (naive)
 
     computes the total number photons in the pulse, based on the assumption
     that all photons contribute the same energy (hbar omega_0)
@@ -126,32 +153,53 @@ def number_of_photons(t,u0,w0):
         u0 (numpy array, 1D): complex field
         w0 (float): pulse center frequency
 
+    Notes:
+        - Squared amplitude is measured in units of Watts (W=J/s), hBar is
+          given in units J fs, and w and w0  are given in rad/fs. So as to
+          account for the difference in units, an additional factor of 1e-15 is
+          needed to get a proper number of photons.
+
     Returns: (N0)
         N0 (float): total number of photons
     """
     # -- TOTAL ENERGY IN PULSE
-    E = np.trapz(np.abs(u0)**2,x=t) # (J)
+    E = 1e-15*np.trapz(np.abs(u0)**2,x=t) # (W*fs*1e15 = J)
     # -- PHOTON ENERGY
-    E0 = hBar*(w0*1e15) # (J)
+    E0 = hBar*w0                    # (J)
     return E/E0
 
 
 def coherence_interpulse(w, uw_list):
+    r"""first order coherence (interpulse coherence)
 
+    Implements spectrally resolved modulus of first order coherence for zero
+    time-lag, see Eq. (3) of Ref. [1]
+
+    Args:
+      w (1D array): angular frequency grid
+      uw_list (2D array): list of spectral envelopes at same z
+
+    Returns: Gamma
+      g12 (float): first order coherence as function of angular frequency
+
+    Refs:
+        [1] J. M. Dudley, G. Genty, S. Coen,
+        Supercontinuum generation in photonic crystal fiber,
+        Rev. Mod. Phys. 78 (2006) 1135,
+        http://dx.doi.org/10.1103/RevModPhys.78.1135.
+    """
     Iw_av = np.mean(np.abs(uw_list)**2, axis=0)
-
     nPairs = 0
     tmp = np.zeros(len(uw_list[0]),dtype=complex)
     for i,j in list(itertools.combinations(range(len(uw_list)),2)):
        tmp += uw_list[i]*np.conj(uw_list[j])
        nPairs += 1
     tmp = np.abs(tmp)/nPairs
-
     return np.real(tmp/Iw_av), Iw_av
 
 
 def coherence_intrapulse(w, uw_list, w1, w2):
-    r""" intrapulse coherence function
+    r"""intrapulse coherence function
 
     Implements variant of intrapulse coherence function, modified
     from Eq. (3) of Ref. [1]
@@ -174,14 +222,13 @@ def coherence_intrapulse(w, uw_list, w1, w2):
     Refs:
       [1] Role of Intrapulse Coherence in Carrier-Envelope Phase Stabilization
           N. Raabe, T. Feng, T. Witting, A. Demircan, C. Bree, and G. Steinmeyer,
-          Phys. Rev. Lett. 119, 123901 (2017)
+          Phys. Rev. Lett. 119, 123901 (2017),
+          https://doi.org/10.1103/PhysRevLett.119.123901.
     """
-
     def _helper(w,Ewz,w1,w2):
         w1Id = np.argmin(np.abs(w-w1))
         w2Id = np.argmin(np.abs(w-w2))
         return Ewz[w2Id]*np.conj(Ewz[w1Id])
-
     tmp = list(map(lambda x: _helper(w, x, w1, w2), uw_list))
     num = np.abs(np.mean(tmp))
     den = np.mean(np.abs(tmp))
@@ -210,7 +257,7 @@ class GNLS(object):
     Implements the generalized nonlinear Schrödinger equation (GNLS) [1].
 
     References:
-        [1] G. P. Agrawal, Nonlinear Fiber Optics, Academic Press (2019)
+        [1] G. P. Agrawal, Nonlinear Fiber Optics, Academic Press (2019).
 
     Args:
         w (:obj:`numpy.ndarray`):
@@ -266,12 +313,11 @@ class GNLS(object):
     def claw_Ph(self, i, zi, w, uw):
         r"""Conservation law of the propagation model.
 
-        Implements conserved quantity related to the photon number [1].
+        Implements conserved quantity related to the classical analog of the
+        photon number [1], defined by
 
-        References:
-            [1] K. J. Blow, D. Wood, Theoretical description of transient
-            stimulated Raman scattering in optical fibers.  IEEE J. Quantum
-            Electron., 25 (1989) 1159, https://doi.org/10.1109/3.40655.
+        .. math::
+            C_{Ph}(z)= \frac{2\pi}{\hbar \Delta \Omega} \sum_{\Omega} |u_\omega(z)|^2/(\Omega+\omega_0).
 
         Args:
             i (:obj:`int`):
@@ -283,13 +329,28 @@ class GNLS(object):
             uw (:obj:`numpy.ndarray`):
                 Freuqency domain representation of the current field.
 
+        References:
+            [1] K. J. Blow, D. Wood, Theoretical description of transient
+            stimulated Raman scattering in optical fibers.  IEEE J. Quantum
+            Electron., 25 (1989) 1159, https://doi.org/10.1109/3.40655.
+
+        Notes:
+            - Squared amplitude is measured in units of Watts (W=J/s), hBar is
+              given in units J fs, and w and w0  are given in rad/fs. So as to
+              account for the difference in units, an additional factor of 1e15
+              is needed to get a proper number of photons.
+
         Returns: (C_Ph)
-            :obj:`float`: total number of photons.
+            CPh (float): Total number of photons.
         """
         # -- STRIP OFF SELF KEYWORD
         w, w0 = self.w, self.w0
         # -- SCALING FACTOR WITH UNITS OF 1/J
-        sFac = 2*np.pi/hBar/(w[1]-w[0])/1e15
+        dw = w[1]-w[0]              # (rad/fs)
+        sFac = 2*np.pi/(hBar*dw)    # (1/J)
         # --- DIMENSIONLES TOTAL NUMBER OF PHOTONS
-        return sFac*np.sum(np.abs(uw)**2/(w + w0))
+        # ... np.abs(uw)**2 HAS UNITS (W=J/s = 1e15 J/fs )
+        # ... w+w0 HAS UNITS (rad/fs)
+        # ... ADDITIONAL FACTOR 1e-15 RESOLVES THIS ISSUE
+        return 1e-15*sFac*np.sum(np.abs(uw)**2/(w + w0))
 
