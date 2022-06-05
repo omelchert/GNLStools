@@ -16,6 +16,7 @@ Date: March 2022
 '''
 import numpy as np
 import numpy.fft as nfft
+from numpy.lib.scimath import sqrt as csqrt
 from scipy.special import factorial
 from scipy.constants import Planck  as hPlanck
 
@@ -48,7 +49,7 @@ def noise_model_01(t,w0,s0):
     # -- REPRESENTATIVE ENERGY OF PHOTON IN BIN 
     e0 = hBar*w0                        # (J)
     # -- NOISE SCALING FACTOR ACCOUNTING FOR POWER IN WATTES
-    sFac = np.sqrt(1e15*e0/dt/4)      # (sqrt(W) = sqrt(J/s))
+    sFac = csqrt(1e15*e0/dt/4)      # (sqrt(W) = sqrt(J/s))
     # -- GAUSSIAN NOISE MODEL IN TIME DOMAIN 
     noise_t = sFac*(N01(0,1,size=t.size) + 1j*N01(0,1,size=t.size))
 
@@ -76,9 +77,9 @@ def noise_model_02(t,w0,s0):
     T = 2*np.pi/(w[1]-w[0])
 
     # -- REPRESENTATIVE ENERGY OF PHOTON IN BIN 
-    e0 = hBar*np.abs(w+w0)          # (J)
+    e0 = hBar*(w+w0)          # (J)
     # -- NOISE SCALING FACTOR
-    sFac = np.sqrt(1e15*e0/T)       # (sqrt(W) = sqrt(Js))
+    sFac = csqrt(1e15*e0/T)       # (sqrt(W) = sqrt(Js))
     # -- OBTAIN SPECTRAL AMPLITUDES WITH PURE PHASE NOISE
     phi = U(size=t.size)
     noise_w = sFac*np.exp(1j*2*np.pi*phi)
@@ -107,9 +108,9 @@ def noise_model_03(t,w0,s0):
     T = 2*np.pi/(w[1]-w[0])
 
     # -- REPRESENTATIVE ENERGY PER BIN 
-    e0 = hBar*np.abs(w+w0)          # (J)
+    e0 = hBar*(w+w0)          # (J)
     # -- NOISE SCALING FACTOR
-    sFac = np.sqrt(1e15*e0/T/4)     # (sqrt(W) = sqrt(Js))
+    sFac = csqrt(1e15*e0/T/4)     # (sqrt(W) = sqrt(Js))
     # -- OBTAIN NOISIFIED SPECTRAL AMPLITUDES USING BOX-MUELLER METHOD 
     phi1, phi2 = U(size=t.size), U(size=t.size)
     noise_w = sFac*np.sqrt(-2*np.log(phi1))*np.exp(2j*np.pi*phi2)
