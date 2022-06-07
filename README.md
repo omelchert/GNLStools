@@ -46,8 +46,13 @@ of the repository, e.g. via
 
 ## Sample results
 
-![alt text](https://github.com/omelchert/GNLStools/results/numExp03_noise_model_01/pp_fig_FIG04/fig04.png)
+![alt text](https://github.com/omelchert/GNLStools/blob/main/results/numExp03_noise_model_01/pp_fig_FIG04/fig04.png)
 
+The figure above shows exemplary results for a supercontinuum generation
+spectrum, obtained for input pulses of different size. The right y-axis shows
+the averaged spectrum, while the left axis shows the standard error of the mean
+when taking into account a number of M independed instances of input pulse
+noise. 
 
 ## License 
 
