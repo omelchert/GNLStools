@@ -50,9 +50,9 @@ of the repository, e.g. via
 
 The figure above shows exemplary results for a supercontinuum generation
 spectrum, obtained for input pulses of different size. The right y-axis shows
-the averaged spectrum, while the left axis shows the standard error of the mean
-when taking into account a number of M independed instances of input pulse
-noise. 
+the spectrum avereaged over 200 indepenent instances of input pulse noise, and
+the left axis shows the standard error of the mean when taking into account a
+number of M independed instances of noise. 
 
 ## License 
 
