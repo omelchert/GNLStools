@@ -42,6 +42,13 @@ of the repository, e.g. via
 
 ``$ git clone https://github.com/omelchert/GNLStools``
 
+
+
+## Sample results
+
+![alt text](https://github.com/omelchert/GNLStools/results/numExp03_noise_model_01/pp_fig_FIG04/fig04.png)
+
+
 ## License 
 
 This project is licensed under the MIT License - see the
