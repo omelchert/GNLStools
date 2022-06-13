@@ -1,9 +1,8 @@
 # GNLStools 
 
 `GNLStools.py` is a Python module containing data structures and functions for
-simulation and analysis of the propagation dynamics of ultrashort laserpulses
-in nonlinear waveguides, described by the generalized nonlinear Schrödinger
-equation. 
+simulation and analysis of the propagation dynamics of laserpulses in nonlinear
+waveguides, described by the generalized nonlinear Schrödinger equation. 
 
 The provided software implements the effects of linear dispersion, pulse
 self-steepening, and the Raman effect. Input pulse shot noise can be included
