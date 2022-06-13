@@ -9,7 +9,7 @@ The provided software implements the effects of linear dispersion, pulse
 self-steepening, and the Raman effect. Input pulse shot noise can be included
 using commonly adopted quantum noise models considering both, pure spectral
 phase noise as well as Gaussian noise, and coherence properties of the
-resulting spectra can be calculated.
+resulting spectra can be calculated. 
 
 We include examples, demonstrating the functionality of the software by
 reproducing results for a supercontinuum generation process in a photonic
@@ -49,7 +49,7 @@ of the repository, e.g. via
 ![alt text](https://github.com/omelchert/GNLStools/blob/main/results/numExp03_noise_model_01/pp_fig_FIG04/fig04.png)
 
 The figure above shows exemplary results for a supercontinuum generation
-spectrum, obtained for input pulses of different size. The right y-axis shows
+process, obtained for input pulses of different duration. The right y-axis shows
 the spectrum avereaged over 200 indepenent instances of input pulse noise, and
 the left axis shows the standard error of the mean when taking into account a
 number of M independed instances of noise. 
