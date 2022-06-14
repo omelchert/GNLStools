@@ -20,6 +20,8 @@ from numpy.lib.scimath import sqrt as csqrt
 from scipy.special import factorial
 from scipy.constants import Planck  as hPlanck
 
+__version__ = "1.0.0"
+
 # -- CONVENIENT ABBREVIATIONS
 hBar = 1e15*hPlanck/2/np.pi # (J fs) reduced Planck constant
 # ... FORWARD AND BACKWARD FOURIER TRANSFORMS
