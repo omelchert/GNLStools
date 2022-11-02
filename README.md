@@ -53,6 +53,19 @@ the spectrum avereaged over 200 indepenent instances of input pulse noise, and
 the left axis shows the standard error of the mean when taking into account a
 number of M independed instances of noise. 
 
+## Further informaion
+
+The `GNLStools' software package is described in 
+
+> O. Melchert, A. Demircan, "GNLStools.py: A generalized nonlinear Schrödinger Python module implementing different models of input pulse quantum noise," SoftwareX 20 (2022) 101232, DOI: [10.1016/j.softx.2022.101232](https://doi.org/10.1016/j.softx.2022.101232).
+
+The presented software has been extensively used in our research work,
+including the study of supercontinuum generation and higher-order soliton
+compression in diamond waveguides
+
+> O. Melchert, et al. "Soliton compression and supercontinuum spectra in nonlinear diamond photonics," [arXiv.2211.00492v1](https://doi.org/10.48550/arXiv.2211.00492).
+
+
 ## License 
 
 This project is licensed under the MIT License - see the
