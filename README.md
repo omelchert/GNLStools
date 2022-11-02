@@ -57,13 +57,13 @@ number of M independed instances of noise.
 
 The `GNLStools' software package is described in 
 
-> O. Melchert, A. Demircan, "GNLStools.py: A generalized nonlinear Schrödinger Python module implementing different models of input pulse quantum noise," SoftwareX 20 (2022) 101232, DOI: [10.1016/j.softx.2022.101232](https://doi.org/10.1016/j.softx.2022.101232).
+> O. Melchert, A. Demircan, "GNLStools.py: A generalized nonlinear Schrödinger Python module implementing different models of input pulse quantum noise," SoftwareX 20 (2022) 101232, DOI: [10.1016/j.softx.2022.101232](https://doi.org/10.1016/j.softx.2022.101232); [arXiv.2206.07526v1](https://doi.org/10.48550/arXiv.2206.07526).
 
 The presented software has been extensively used in our research work,
 including the study of supercontinuum generation and higher-order soliton
 compression in diamond waveguides
 
-> O. Melchert, et al. "Soliton compression and supercontinuum spectra in nonlinear diamond photonics," [arXiv.2211.00492v1](https://doi.org/10.48550/arXiv.2211.00492).
+> O. Melchert et al., "Soliton compression and supercontinuum spectra in nonlinear diamond photonics," [arXiv.2211.00492v1](https://doi.org/10.48550/arXiv.2211.00492).
 
 
 ## License 
